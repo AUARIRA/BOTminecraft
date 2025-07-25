@@ -26,9 +26,11 @@ function createBot() {
   const bot = mineflayer.createBot({
     host: config.server.ip,
     port: config.server.port,
-    username: config.bot-account.username,
-    password: config.bot-account.password,
-    auth: config.bot-account.type,
+    // ĐÃ SỬA LẠI CHO ĐÚNG
+    username: config['bot-account'].username,
+    password: config['bot-account'].password,
+    auth: config['bot-account'].type,
+    // ...
     version: config.server.version,
   });
 
