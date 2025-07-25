@@ -4,45 +4,34 @@
     "password": "",
     "type": "mojang"
   },
-
   "server": {
     "ip": "AURORA_A0.aternos.me",
     "port": 37783,
     "version": "1.12.2"
   },
-  
-  "position": {
-    "enabled": false,
-    "x": 0,
-    "y": 0,
-    "z": 0
-  },
-
   "utils": {
     "auto-auth": {
       "enabled": false,
-      "password": ""
+      "password": "mat_khau_cua_ban_trong_game"
     },
-
     "anti-afk": {
-      "enabled": true,
-      "sneak": true
+      "enabled": true
     },
-
     "chat-messages": {
       "enabled": false,
       "repeat": true,
-      "repeat-delay": 60,
-
+      "repeat-delay": 120,
       "messages": [
-        "I'm a regular player",
-        "My owner is Lamgerr",
-        "I want be alone"
+        "Xin chào, tôi là một con bot!",
+        "Dự án này được tạo ra để thử nghiệm."
       ]
     },
-
-    "chat-log": true,
-    "auto-reconnect": true,
-    "auto-recconect-delay": 5000
+    "chat-log": {
+      "enabled": true
+    },
+    "auto-reconnect": {
+      "enabled": true,
+      "delay": 5000
+    }
   }
 }
