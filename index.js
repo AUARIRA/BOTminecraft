@@ -50,14 +50,27 @@ function createBot() {
     }
 
     // Module: Chống AFK phức tạp
-    if (config.utils['anti-afk'].enabled) {
-      console.log("[MODULE] Anti-AFK nâng cao đã được kích hoạt.");
-      // ... (Code hành vi AFK)
-      setInterval(() => { bot.swingArm('left'); }, 20000); // Vung tay mỗi 20s
-      setInterval(() => { bot.setControlState('jump', true); bot.setControlState('jump', false); }, 15000); // Nhảy mỗi 15s
-      setInterval(() => { const yaw = Math.random() * Math.PI * 2; bot.look(yaw, 0); }, 30000); // Quay đầu ngẫu nhiên mỗi 30s
-    }
-  });
+      if (config.utils['anti-afk'].enabled) {
+         console.log('[INFO] Started ADVANCED anti-afk module.');
+         setInterval(() => {
+            bot.setControlState('forward', true);
+            setTimeout(() => { bot.setControlState('forward', false); bot.setControlState('left', true); }, 500);
+            setTimeout(() => { bot.setControlState('left', false); bot.setControlState('back', true); }, 1000);
+            setTimeout(() => { bot.setControlState('back', false); bot.setControlState('right', true); }, 1500);
+            setTimeout(() => { bot.setControlState('right', false); }, 2000);
+         }, 2100);
+         setInterval(() => { bot.setControlState('jump', true); bot.setControlState('jump', false); }, 3000);
+         setInterval(() => {
+            bot.setControlState('sneak', true);
+            setTimeout(() => { bot.setControlState('sneak', false); }, 3000);
+         }, 10000);
+         setInterval(() => {
+            const yaw = Math.random() * Math.PI * 2;
+            const pitch = (Math.random() * Math.PI) - (Math.PI / 2);
+            bot.look(yaw, pitch, false);
+         }, 8000);
+      }
+   });
 
   // --- CÁC TƯƠNG TÁC VỚI NGƯỜI CHƠI ---
   bot.on('chat', (username, message) => {
