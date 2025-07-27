@@ -17,21 +17,16 @@
     "anti-afk": {
       "enabled": true
     },
-    "chat-messages": {
-      "enabled": false,
-      "repeat": true,
-      "repeat-delay": 120,
-      "messages": [
-        "Xin chào, tôi là một con bot!",
-        "Dự án này được tạo ra để thử nghiệm."
-      ]
-    },
     "chat-log": {
       "enabled": true
     },
     "auto-reconnect": {
       "enabled": true,
-      "delay": 5000
+      "delay": 15000
     }
+  },
+  "gemini-ai": {
+    "enabled": true,
+    "apiKey": "AIzaSyC56KwV1o5wSeGX3JaVEF_1NRHe5_-un7w"
   }
 }
