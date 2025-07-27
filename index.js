@@ -5,6 +5,7 @@ const Movements = require('mineflayer-pathfinder').Movements;
 const { GoalFollow } = require('mineflayer-pathfinder').goals;
 const express = require('express');
 const fs = require('fs');
+const readline = require('readline'); // THÊM THƯ VIỆN ĐỂ ĐỌC LỆNH TỪ CONSOLE
 
 // --- PHẦN 2: ĐỌC FILE CẤU HÌNH VÀ CHUẨN BỊ ---
 let config;
@@ -12,25 +13,23 @@ try {
   config = JSON.parse(fs.readFileSync('./settings.json', 'utf8'));
 } catch (err) {
   console.error("LỖI: Không thể đọc file settings.json!", err);
-  process.exit(1); // Thoát nếu không có file cấu hình
+  process.exit(1);
 }
 
-// Tạo máy chủ web nhỏ để giữ bot thức (cho Replit, Termux, etc.)
 const app = express();
 app.get('/', (req, res) => res.send('Bot is running.'));
 app.listen(8000, () => console.log('Web server started to keep the bot alive.'));
 
+let isReconnecting = false; // Biến cờ để chống vòng lặp kết nối
 
 // --- PHẦN 3: HÀM TẠO BOT CHÍNH ---
 function createBot() {
   const bot = mineflayer.createBot({
     host: config.server.ip,
     port: config.server.port,
-    // ĐÃ SỬA LẠI CHO ĐÚNG
     username: config['bot-account'].username,
     password: config['bot-account'].password,
     auth: config['bot-account'].type,
-    // ...
     version: config.server.version,
   });
 
@@ -39,6 +38,8 @@ function createBot() {
   // --- CÁC HÀNH ĐỘNG KHI BOT VÀO GAME ---
   bot.once('spawn', () => {
     console.log(`\x1b[32m[INFO] Bot ${bot.username} đã vào server thành công!\x1b[0m`);
+    console.log('\x1b[36m[CONSOLE] Bạn có thể gõ lệnh hoặc chat trực tiếp vào đây và nhấn Enter.\x1b[0m');
+    
     const mcData = require('minecraft-data')(bot.version);
     const defaultMove = new Movements(bot, mcData);
     bot.pathfinder.setMovements(defaultMove);
@@ -51,47 +52,42 @@ function createBot() {
       console.log("[MODULE] Auto-Auth đã được kích hoạt.");
     }
 
-    // Module: Chống AFK phức tạp
-      if (config.utils['anti-afk'].enabled) {
-         console.log('[INFO] Started ADVANCED anti-afk module.');
-         setInterval(() => {
-            bot.setControlState('forward', true);
-            setTimeout(() => { bot.setControlState('forward', false); bot.setControlState('left', true); }, 500);
-            setTimeout(() => { bot.setControlState('left', false); bot.setControlState('back', true); }, 1000);
-            setTimeout(() => { bot.setControlState('back', false); bot.setControlState('right', true); }, 1500);
-            setTimeout(() => { bot.setControlState('right', false); }, 2000);
-         }, 2100);
-         setInterval(() => { bot.setControlState('jump', true); bot.setControlState('jump', false); }, 3000);
-         setInterval(() => {
-            bot.setControlState('sneak', true);
-            setTimeout(() => { bot.setControlState('sneak', false); }, 3000);
-         }, 10000);
-         setInterval(() => {
-            const yaw = Math.random() * Math.PI * 2;
-            const pitch = (Math.random() * Math.PI) - (Math.PI / 2);
-            bot.look(yaw, pitch, false);
-         }, 8000);
-      }
-   });
+    // =================================================================
+    // === MODULE ANTI-AFK TỐI ƯU HÓA (ĐÃ THAY ĐỔI) ===
+    // =================================================================
+    if (config.utils['anti-afk'].enabled) {
+      console.log("[MODULE] Anti-AFK ngẫu nhiên đã được kích hoạt (1 hành động / 10 giây).");
+      
+      const afkActions = [
+        () => { bot.setControlState('jump', true); bot.setControlState('jump', false); console.log('[AFK] Hành động: Nhảy.'); },
+        () => { const yaw = Math.random() * Math.PI * 2; const pitch = (Math.random() * Math.PI) - (Math.PI / 2); bot.look(yaw, pitch, false); console.log('[AFK] Hành động: Quay đầu.'); },
+        () => { bot.swingArm('left'); console.log('[AFK] Hành động: Đấm.'); },
+        () => { bot.setControlState('sneak', true); setTimeout(() => bot.setControlState('sneak', false), 1000); console.log('[AFK] Hành động: Cúi người.'); },
+        () => { const moveDir = ['forward', 'back', 'left', 'right'][Math.floor(Math.random() * 4)]; bot.setControlState(moveDir, true); setTimeout(() => bot.setControlState(moveDir, false), 500); console.log(`[AFK] Hành động: Di chuyển ${moveDir}.`); }
+      ];
+
+      // Một vòng lặp duy nhất để chọn hành động ngẫu nhiên
+      setInterval(() => {
+        const randomAction = afkActions[Math.floor(Math.random() * afkActions.length)];
+        randomAction();
+      }, 10000); // 10000ms = 10 giây
+    }
+  });
 
   // --- CÁC TƯƠNG TÁC VỚI NGƯỜI CHƠI ---
   bot.on('chat', (username, message) => {
     if (username === bot.username) return;
-    if (config.utils['chat-log'].enabled) console.log(`[CHAT] <${username}> ${message}`);
+    if (config.utils['chat-log'].enabled) console.log(`\x1b[35m[CHAT] <${username}> ${message}\x1b[0m`);
 
     const command = message.toLowerCase().trim();
 
-    // Lệnh: giờ / ngày
     if (command === 'giờ') {
       const vietnamTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' });
       bot.chat(`Bây giờ là ${vietnamTime} (giờ Việt Nam).`);
     } else if (command === 'ngày') {
       const vietnamDate = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', day: '2-digit', month: '2-digit', year: 'numeric' });
       bot.chat(`Hôm nay là ngày ${vietnamDate}.`);
-    }
-
-    // Lệnh: !theotoi / !dunglai
-    else if (command === '!theotoi') {
+    } else if (command === '!theotoi') {
       const player = bot.players[username]?.entity;
       if (!player) return bot.chat("Mình không thấy bạn đâu cả!");
       bot.chat(`Ok, mình sẽ đi theo ${username}. Dùng !dunglai để dừng.`);
@@ -101,6 +97,28 @@ function createBot() {
       bot.chat("Ok, mình đã đứng yên.");
     }
   });
+  
+  // =================================================================
+  // === TÍNH NĂNG MỚI: ĐIỀU KHIỂN TỪ CONSOLE TERMUX ===
+  // =================================================================
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  rl.on('line', (line) => {
+    if (bot.entity) { // Chỉ gửi lệnh nếu bot đã vào game
+        bot.chat(line);
+    } else {
+        console.log("Bot chưa vào game, không thể gửi lệnh.");
+    }
+  });
+  
+  // Đóng readline khi bot ngắt kết nối để không bị lỗi
+  bot.once('end', () => {
+    rl.close();
+  });
+
 
   // --- XỬ LÝ CÁC SỰ KIỆN KHÁC CỦA BOT ---
   bot.on('kicked', handleDisconnect);
@@ -108,11 +126,15 @@ function createBot() {
   bot.on('error', (err) => console.log(`\x1b[31m[LỖI] Đã xảy ra lỗi: ${err.message}\x1b[0m`));
 
   function handleDisconnect(reason) {
-    console.log(`\x1b[33m[KẾT NỐI] Bot đã bị ngắt kết nối. Lý do: ${reason}\x1b[0m`);
-    if (config.utils['auto-reconnect'].enabled) {
+    console.log(`\x1b[33m[KẾT NỐI] Bot đã bị ngắt kết nối. Lý do: ${String(reason)}\x1b[0m`);
+    if (config.utils['auto-reconnect'].enabled && !isReconnecting) {
+      isReconnecting = true;
       const delay = config.utils['auto-reconnect'].delay;
       console.log(`[KẾT NỐI] Sẽ thử kết nối lại sau ${delay / 1000} giây...`);
-      setTimeout(createBot, delay);
+      setTimeout(() => {
+        isReconnecting = false;
+        createBot();
+      }, delay);
     }
   }
 }
