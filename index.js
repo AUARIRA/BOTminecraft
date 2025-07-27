@@ -6,7 +6,7 @@ const { GoalFollow } = require('mineflayer-pathfinder').goals;
 const express = require('express');
 const fs = require('fs');
 const readline = require('readline');
-const { GoogleGenerativeAI } = require('@google/generative-ai'); // Thư viện của Gemini
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // --- PHẦN 2: ĐỌC FILE CẤU HÌNH VÀ CHUẨN BỊ ---
 let config;
@@ -17,21 +17,42 @@ try {
   process.exit(1);
 }
 
-// Khởi tạo Gemini AI
+// =================================================================
+// === KHỞI TẠO GEMINI AI (LOGIC ĐÃ SỬA LẠI) ===
+// =================================================================
 let genAI, generativeModel;
-if (config['gemini-ai']?.enabled && config['gemini-ai']?.apiKey && config['gemini-ai'].apiKey !== 'DÁN_API_KEY_CỦA_ANH_VÀO_ĐÂY') {
-  try {
-    genAI = new GoogleGenerativeAI(config['gemini-ai'].apiKey);
-    generativeModel = genAI.getGenerativeModel({ model: "gemini-pro" });
-    console.log("\x1b[32m[AI] Đã kết nối với Google Gemini thành công!\x1b[0m");
-  } catch (err) {
-    console.error("\x1b[31m[AI LỖI] Không thể khởi tạo Gemini. Vui lòng kiểm tra lại API Key trong settings.json\x1b[0m");
-    genAI = null;
+
+// Hàm khởi tạo AI
+function initializeAI() {
+  // Điều kiện 1: Tính năng phải được bật trong config
+  if (!config['gemini-ai']?.enabled) {
+    console.log("\x1b[33m[AI] Tính năng Gemini AI đã bị tắt trong file settings.json.\x1b[0m");
+    return;
   }
-} else {
-  console.log("\x1b[33m[AI] Tính năng Gemini AI chưa được bật hoặc thiếu API Key.\x1b[0m");
+
+  const apiKey = config['gemini-ai']?.apiKey;
+  // Điều kiện 2: API Key phải tồn tại và không phải là giá trị mặc định
+  if (!apiKey || apiKey === 'DÁN_API_KEY_CỦA_ANH_VÀO_ĐÂY') {
+    console.log("\x1b[33m[AI] Thiếu API Key. Vui lòng thêm API Key vào file settings.json để sử dụng tính năng này.\x1b[0m");
+    return;
+  }
+  
+  // Nếu tất cả điều kiện đều ổn, thử kết nối
+  try {
+    genAI = new GoogleGenerativeAI(apiKey);
+    generativeModel = genAI.getGenerativeModel({ model: "gemini-pro" });
+    console.log("\x1b[32m[AI] Đã kết nối với Google Gemini thành công! Miki đã sẵn sàng.\x1b[0m");
+  } catch (error) {
+    console.error(`\x1b[31m[AI LỖI] Không thể khởi tạo Gemini. Lý do: ${error.message}\x1b[0m`);
+    console.error("\x1b[31m[AI LỖI] Gợi ý: Vui lòng kiểm tra lại API Key có đúng không hoặc kết nối mạng có ổn định không.\x1b[0m");
+    genAI = null; // Vô hiệu hóa AI nếu có lỗi
+  }
 }
 
+// Gọi hàm để khởi tạo AI ngay khi bắt đầu
+initializeAI();
+
+// ... Phần còn lại của code (app, isReconnecting, createBot) giữ nguyên ...
 const app = express();
 app.get('/', (req, res) => res.send('Bot is running.'));
 app.listen(8000, () => console.log('Web server started to keep the bot alive.'));
@@ -39,7 +60,6 @@ app.listen(8000, () => console.log('Web server started to keep the bot alive.'))
 let isReconnecting = false;
 let hasRestartedToday = { hour: -1 };
 
-// --- PHẦN 3: HÀM TẠO BOT CHÍNH ---
 function createBot() {
   const bot = mineflayer.createBot({
     host: config.server.ip,
