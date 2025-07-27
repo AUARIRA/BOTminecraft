@@ -32,7 +32,7 @@ function initializeAI() {
 
   const apiKey = config['gemini-ai']?.apiKey;
   // Điều kiện 2: API Key phải tồn tại và không phải là giá trị mặc định
-  if (!apiKey || apiKey === 'DÁN_API_KEY_CỦA_ANH_VÀO_ĐÂY') {
+  if (!apiKey || apiKey === 'AIzaSyC56KwV1o5wSeGX3JaVEF_1NRHe5_-un7w') {
     console.log("\x1b[33m[AI] Thiếu API Key. Vui lòng thêm API Key vào file settings.json để sử dụng tính năng này.\x1b[0m");
     return;
   }
